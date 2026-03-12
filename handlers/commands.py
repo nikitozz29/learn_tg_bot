@@ -2,11 +2,10 @@ from aiogram import Bot, F, Router
 from aiogram.types import Message
 from aiogram.filters import Command
 
-import openai
-import httpx
 
 import config
 from cls import Reader, enums
+from cls.deep_seek import DeepSeek, DeepSeekMessage
 from keyboards.reply_kb import kb_main_menu
 
 
@@ -25,29 +24,11 @@ async def com_start_handler(message: Message):
 
 @command_router.message(Command('random'))
 async def random_handler(message: Message):
-    gpt_client = openai.AsyncOpenAI(
-        api_key=config.DEEP_SEEK_TOKEN,
-        # http_client=httpx.AsyncClient(
-        #     proxy=config.PROXY,
-        # )
-        base_url='https://api.deepseek.com/',
-    )
-    reader = Reader(
-        enums.ResourcePath.RESOURCE_DIR.value / enums.ResourcePath.PROMPTS_DIR.value / enums.ResourceFileName.RANDOM_FACT.value
-    )
-    prompt = await reader.load()
-    response = await gpt_client.chat.completions.create(
-        model='deepseek-chat',
-        messages=[
-            {
-            'role': 'system',
-            'content': prompt,
-            },
-        ]
-    )
-    # print(response.choices[0])
-    # print(response.choices[0].message)
-    # print(response.choices[0].message.content)
+    deep_seek_client = DeepSeek()
+    message_list = DeepSeekMessage('random')
+    await message_list.init_message()
+    response = await deep_seek_client.request(message_list)
+
     await message.answer(
-        text=response.choices[0].message.content,
+        text=response,
     )
