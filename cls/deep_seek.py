@@ -1,29 +1,21 @@
 import openai
-import config
-from pathlib import Path
 
-from .enums import ResourcePath
-from .reader import Reader
+import config
+
 
 class DeepSeekMessage:
 
-    def __init__(self, prompt_name: str):
-        self._path = ResourcePath.RESOURCE_DIR.value / ResourcePath.PROMPTS_DIR.value / Path(prompt_name + '.txt')
-        self.message_list = []
+    def __init__(self, prompt: str):
+        self._prompt = prompt
+        self.message_list = self._init_message()
 
-    async def init_message(self):
-        prompt = await self._load_prompt()
+    def _init_message(self):
         message = {
-                'role': 'system',
-                'content': prompt,
+            'role': 'system',
+            'content': self._prompt,
         }
+        return [message]
 
-        self.message_list.append(message)
-
-    async def _load_prompt(self):
-        reader = Reader(self._path)
-        response = await reader.load()
-        return response
 
 class DeepSeek:
     _instance = None
@@ -44,7 +36,6 @@ class DeepSeek:
         )
         return deep_seek_client
     async def request(self, message: DeepSeekMessage, model: str = 'deepseek-chat'):
-
         response = await self._client.chat.completions.create(
             model=model,
             messages=message.message_list,
